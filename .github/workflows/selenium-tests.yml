@@ -1,0 +1,68 @@
+name: Selenium UI Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:        # allows manual trigger from GitHub UI
+
+jobs:
+  test:
+    name: Run TestNG Selenium Tests (Headless Chrome)
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Java 11 ─────────────────────────────────────────────────────────
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+
+      # ── 3. Chrome + ChromeDriver ────────────────────────────────────────────
+      - name: Install Google Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      # ── 4. Run tests ────────────────────────────────────────────────────────
+      # HEADLESS=true is read by BaseClass to pass --headless=new to ChromeOptions
+      - name: Run TestNG tests via Maven
+        run: mvn clean test -B
+        env:
+          HEADLESS: true
+
+      # ── 5. Publish Surefire XML results ─────────────────────────────────────
+      - name: Publish Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: TestNG Results
+          path: target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      # ── 6. Upload Extent Report HTML ─────────────────────────────────────────
+      - name: Upload Extent Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extent-report
+          path: test-output/ExtentReport.html
+          retention-days: 14
+
+      # ── 7. Upload Surefire Reports ───────────────────────────────────────────
+      - name: Upload Surefire Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
