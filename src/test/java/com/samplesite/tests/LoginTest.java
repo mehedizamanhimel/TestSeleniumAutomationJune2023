@@ -1,102 +1,53 @@
 package com.samplesite.tests;
 
-import Web.pages.LoginPage;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
+import com.samplesite.base.BaseTest;
+import com.samplesite.pages.LoginPage;
+import com.samplesite.utils.ConfigReader;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class LoginTest {
+public class LoginTest extends BaseTest {
 
-    WebDriver driver;
-    String baseUrl = "";
-    String userName_Positive= "abcd";
-    String userName_Negative= "abcde";
-    String userName_Blank= "";
-    String passWord_Positive= "1234";
-    String passWord_Negative= "12345";
-    String passWord_Blank= "";
-    String ExpectedMessage = "Login done successfully";
-    String ExpectedMessage_NoUserName = "Please provide username";
-    String ExpectedMessage_NoPassword = "Please provide password";
-    String ExpectedMessage_WrongUserName = "Wrong username";
-    String ExpectedMessage_WrongPassword = "Wrong password";
+    private LoginPage loginPage;
 
-    @BeforeTest
-    public void beforeTest(){
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        System.out.println("Test started successfully");
+    @BeforeMethod
+    public void initPage() {
+        loginPage = new LoginPage(driver);
     }
 
-
-    @Test (priority = 0 , description = "Verify that login is failed with invalid username & valid password")
-    public void verifyLoginWorking_Negative_Wrong_Username(){
-        LoginPage loginPage = new LoginPage(driver);
-
-        driver.get(baseUrl);
-        loginPage.provide_Username(userName_Negative);
-        loginPage.provide_Password(passWord_Positive);
-        loginPage.clickTheLoginButton();
-        Assert.assertEquals(loginPage.return_LoginConsent(), ExpectedMessage_WrongUserName);
-
+    @DataProvider(name = "invalidCredentials")
+    public Object[][] invalidCredentials() {
+        return new Object[][]{
+                {ConfigReader.get("invalid.username"), ConfigReader.get("valid.password"),   "Your username is invalid!"},
+                {ConfigReader.get("valid.username"),   ConfigReader.get("invalid.password"),  "Your password is invalid!"},
+                {"",                                   ConfigReader.get("valid.password"),    "Your username is invalid!"},
+                {ConfigReader.get("valid.username"),   "",                                   "Your password is invalid!"},
+        };
     }
 
-    @Test (priority = 1 , description = "Verify that login is failed with valid username & invalid password")
-    public void verifyLoginWorking_Negative_Wrong_Password(){
-        LoginPage loginPage = new LoginPage(driver);
-
-        driver.get(baseUrl);
-        loginPage.provide_Username(userName_Positive);
-        loginPage.provide_Password(passWord_Negative);
-        loginPage.clickTheLoginButton();
-        Assert.assertEquals(loginPage.return_LoginConsent(), ExpectedMessage_WrongPassword);
-
+    @Test(priority = 0,
+          description = "Verify successful login with valid credentials")
+    public void verifySuccessfulLogin() {
+        loginPage.login(
+                ConfigReader.get("valid.username"),
+                ConfigReader.get("valid.password")
+        );
+        String flashMessage = loginPage.getFlashMessage();
+        logger.info("Flash message received: {}", flashMessage);
+        Assert.assertTrue(flashMessage.contains("You logged into a secure area!"),
+                "Expected success message not found. Actual: " + flashMessage);
     }
 
-    @Test (priority = 2 , description = "Verify that login is failed with blank username & valid password")
-    public void verifyLoginWorking_Negative_Blank_Username(){
-        LoginPage loginPage = new LoginPage(driver);
-
-        driver.get(baseUrl);
-        loginPage.provide_Username(userName_Blank);
-        loginPage.provide_Password(passWord_Positive);
-        loginPage.clickTheLoginButton();
-        Assert.assertEquals(loginPage.return_LoginConsent(), ExpectedMessage_NoUserName);
-
+    @Test(priority = 1,
+          dataProvider = "invalidCredentials",
+          description = "Verify login fails with invalid credentials")
+    public void verifyLoginFailure(String username, String password, String expectedMessage) {
+        loginPage.login(username, password);
+        String flashMessage = loginPage.getFlashMessage();
+        logger.info("Flash message received: {}", flashMessage);
+        Assert.assertTrue(flashMessage.contains(expectedMessage),
+                "Expected error message not found. Actual: " + flashMessage);
     }
-
-    @Test (priority = 3 , description = "Verify that login is failed with valid username & blank password")
-    public void verifyLoginWorking_Negative_Blank_Password(){
-        LoginPage loginPage = new LoginPage(driver);
-
-        driver.get(baseUrl);
-        loginPage.provide_Username(userName_Positive);
-        loginPage.provide_Password(passWord_Blank);
-        loginPage.clickTheLoginButton();
-        Assert.assertEquals(loginPage.return_LoginConsent(), ExpectedMessage_NoPassword);
-
-    }
-
-    @Test (priority = 4, description = "Verify that login is working properly with valid username & password")
-    public void verifyLoginWorking_Positive(){
-        LoginPage loginPage = new LoginPage(driver);
-
-        driver.get(baseUrl);
-        loginPage.provide_Username(userName_Positive);
-        loginPage.provide_Password(passWord_Positive);
-        loginPage.clickTheLoginButton();
-        Assert.assertEquals(loginPage.return_LoginConsent(), ExpectedMessage);
-
-    }
-
-    @AfterTest
-    public void TearDown(){
-        driver.close();
-        System.out.println("Test ended successfully");
-    }
-
 }
