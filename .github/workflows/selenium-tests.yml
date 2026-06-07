@@ -43,8 +43,6 @@ jobs:
           HEADLESS: "true"
 
       # ── 5. Publish Surefire XML results ────────────────────────────────────
-      # Pinned to v1.9.1 — v1 tag has a bug parsing TestNG Surefire XML
-      # (TypeError: Cannot read properties of undefined reading '$')
       - name: Publish Test Results
         uses: dorny/test-reporter@v1.9.1
         if: always()
