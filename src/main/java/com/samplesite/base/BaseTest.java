@@ -23,7 +23,7 @@ public class BaseTest {
         String browser = ConfigReader.get("browser").toLowerCase();
         logger.info("Launching browser: {}", browser);
 
-        // Read CI headless flag — set HEADLESS=true in the Actions workflow env
+        // Honour the CI HEADLESS env var — forces headless mode on CI runners
         boolean headless = "true".equalsIgnoreCase(System.getenv("HEADLESS"));
 
         switch (browser) {
@@ -41,17 +41,17 @@ public class BaseTest {
                 WebDriverManager.chromedriver().setup();
                 ChromeOptions chromeOpts = new ChromeOptions();
                 if (headless) {
-                    // Modern headless flag (Chrome 112+); avoids deprecated --headless
+                    // --headless=new is the modern flag (Chrome 112+)
                     chromeOpts.addArguments("--headless=new");
                 }
-                // Required on Linux CI runners (sandbox not available in containers)
+                // Required on Linux CI runners regardless of headless mode
                 chromeOpts.addArguments("--no-sandbox", "--disable-dev-shm-usage");
                 driver = new ChromeDriver(chromeOpts);
                 break;
             }
         }
 
-        // Explicit size is safer than maximize() on headless / CI runners
+        // Use explicit size instead of maximize() — safer on headless/CI runners
         driver.manage().window().setSize(new Dimension(1920, 1080));
 
         String baseUrl = ConfigReader.get("baseUrl");

@@ -12,7 +12,7 @@ jobs:
     name: Run TestNG Selenium Tests (Headless Chrome)
     runs-on: ubuntu-latest
 
-    # Required for dorny/test-reporter to post inline check results
+    # dorny/test-reporter requires checks:write to post inline results
     permissions:
       checks: write
       contents: read
@@ -38,7 +38,8 @@ jobs:
           chrome-version: stable
 
       # ── 4. Run tests ───────────────────────────────────────────────────────
-      # HEADLESS="true" is read by BaseTest.setUp() via System.getenv("HEADLESS")
+      # HEADLESS="true" → BaseTest reads System.getenv("HEADLESS") and applies
+      # --headless=new, --no-sandbox, --disable-dev-shm-usage automatically.
       - name: Run TestNG tests via Maven
         run: mvn clean test -B
         env:
@@ -54,7 +55,7 @@ jobs:
           reporter: java-junit
           fail-on-error: false
 
-      # ── 6. Upload Extent Report ──────────────────────────────────────────
+      # ── 6. Upload Extent Report HTML ───────────────────────────────────────
       - name: Upload Extent Report
         uses: actions/upload-artifact@v4
         if: always()
