@@ -4,9 +4,12 @@ import com.samplesite.utils.ConfigReader;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -20,19 +23,37 @@ public class BaseTest {
         String browser = ConfigReader.get("browser").toLowerCase();
         logger.info("Launching browser: {}", browser);
 
+        // Read CI headless flag — set HEADLESS=true in the Actions workflow env
+        boolean headless = "true".equalsIgnoreCase(System.getenv("HEADLESS"));
+
         switch (browser) {
-            case "firefox":
+            case "firefox": {
                 WebDriverManager.firefoxdriver().setup();
-                driver = new FirefoxDriver();
+                FirefoxOptions ffOpts = new FirefoxOptions();
+                if (headless) {
+                    ffOpts.addArguments("-headless");
+                }
+                driver = new FirefoxDriver(ffOpts);
                 break;
+            }
             case "chrome":
-            default:
+            default: {
                 WebDriverManager.chromedriver().setup();
-                driver = new ChromeDriver();
+                ChromeOptions chromeOpts = new ChromeOptions();
+                if (headless) {
+                    // Modern headless flag (Chrome 112+); avoids deprecated --headless
+                    chromeOpts.addArguments("--headless=new");
+                }
+                // Required on Linux CI runners (sandbox not available in containers)
+                chromeOpts.addArguments("--no-sandbox", "--disable-dev-shm-usage");
+                driver = new ChromeDriver(chromeOpts);
                 break;
+            }
         }
 
-        driver.manage().window().maximize();
+        // Explicit size is safer than maximize() on headless / CI runners
+        driver.manage().window().setSize(new Dimension(1920, 1080));
+
         String baseUrl = ConfigReader.get("baseUrl");
         logger.info("Navigating to base URL: {}", baseUrl);
         driver.get(baseUrl);
