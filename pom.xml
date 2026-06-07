@@ -20,12 +20,13 @@
 
     <dependencies>
 
-        <!-- TestNG -->
+        <!-- TestNG: compile scope so BaseTest and ExtentReportListener in
+             src/main/java can reference @BeforeMethod, ITestListener, etc. -->
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
 
         <!-- Selenium 4 -->
@@ -79,9 +80,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <!-- Always write surefire XML reports even when tests fail -->
+                    <!-- Always write XML reports even when tests fail -->
                     <testFailureIgnore>true</testFailureIgnore>
-                    <!-- Explicit absolute path so CI runners always find the suite file -->
+                    <!-- Explicit absolute path for CI runners -->
                     <suiteXmlFiles>
                         <suiteXmlFile>${project.basedir}/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
